@@ -1,0 +1,60 @@
+name: Backup Site
+on:
+  schedule:
+    # Weekly on Sundays at midnight https://crontab.guru/weekly
+    - cron:  '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backup Database
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          IS_LIVE_SITE: ${{ secrets.LIGHTSAIL_IP }}
+        if: env.IS_LIVE_SITE != null
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          script: |
+            mkdir -p /home/bitnami/backups/
+            mysqldump -u${{secrets.DATABASE_USER}} -p${{secrets.DATABASE_PASSWORD}} ${{secrets.DATABASE_NAME}} > /home/bitnami/backups/backup.sql
+            export AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY}}
+            export AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET}}
+            export TODAY="$(date '+%Y-%m-%d')"
+            export TIMESTAMP="$(date '+%s')"
+            aws s3 cp /home/bitnami/backups/backup.sql s3://faithworksbackups/database/${{vars.DOMAIN}}/$TODAY/$TIMESTAMP.sql --region us-east-2
+            rm /home/bitnami/backups/backup.sql
+      - name: Backup Complete
+        run: echo "Database backup completed successfully"
+  backup-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backup Files
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          IS_LIVE_SITE: ${{ secrets.LIGHTSAIL_IP }}
+        if: env.IS_LIVE_SITE != null
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          script: |
+            mkdir -p /home/bitnami/backups/
+            zip -r backups/backup.zip site/public/app 
+            export AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY}}
+            export AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET}}
+            export TODAY="$(date '+%Y-%m-%d')"
+            export TIMESTAMP="$(date '+%s')"
+            aws s3 cp /home/bitnami/backups/backup.zip s3://faithworksbackups/files/${{vars.DOMAIN}}/$TODAY/$TIMESTAMP.zip --region us-east-2
+            rm /home/bitnami/backups/backup.zip
+      - name: Backup Complete
+        run: echo "Files backup completed successfully"

@@ -1,0 +1,50 @@
+{
+    "name": "faithworks/template",
+    "type": "project",
+    "require": {
+        "composer/installers": "^2.2",
+        "johnpbloch/wordpress": "^6.3.0",
+        "humanmade/s3-uploads": "^3.0.7",
+        "wpackagist-plugin/wp-super-cache":"^2.0.0",
+        "wpackagist-plugin/elementor":"^3.34.0",
+        "wpackagist-plugin/google-site-kit":"^1.144.0",
+        "wpackagist-plugin/jetpack":"^13.4.3",
+        "wpackagist-plugin/wordpress-seo":"^24.3",
+        "wpackagist-plugin/better-search-replace":"^1.4.2",
+        "wpackagist-theme/hello-elementor":"^3.4.5",
+        "wpackagist-plugin/wp-smushit":"^3.16.6",
+        "wpackagist-plugin/redirection":"^5.5.1",
+        "wpackagist-plugin/safe-svg":"^2.3.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Faithworks\\Boilerplate\\": "src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "johnpbloch/wordpress-core-installer": true
+        }
+    },
+    "extra": {
+        "installer-paths": {
+            "public/app/plugins/{$name}/": ["type:wordpress-plugin"],
+            "public/app/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
+            "public/app/themes/{$name}/": ["type:wordpress-theme"]
+        },
+        "wordpress-install-dir": {
+            "johnpbloch/wordpress-core": "public/wp"
+        }
+    },
+    "repositories":[
+        {
+            "type":"composer",
+            "url":"https://wpackagist.org",
+            "only": [
+                "wpackagist-plugin/*",
+                "wpackagist-theme/*"
+            ]
+        }
+    ]
+}

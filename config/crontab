@@ -1,0 +1,2 @@
+55 8 * * * sudo /opt/bitnami/letsencrypt/lego --path /opt/bitnami/letsencrypt --email="%ADMIN_EMAIL%" --http --http-timeout 30 --http.webroot /opt/bitnami/apps/letsencrypt --domains=%DOMAIN% --user-agent bitnami-bncert/1.1.1 renew && sudo /opt/bitnami/apache/bin/httpd -f /opt/bitnami/apache/conf/httpd.conf -k graceful # bncert-autorenew
+* * * * * cd /home/bitnami/site/public/wp; php -q wp-cron.php >/dev/null 2>&1

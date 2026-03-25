@@ -1,0 +1,34 @@
+name: Import Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "WARNING: This will overwrite the current database!! Upload your database file to the faithworksbackups/database/THIS_DOMAIN/ folder. You can also specify an automated backup file in this folder as well. Enter S3 Backups File Path. (Example: 2023-08-08/yourdbfile.sql)"
+        required: true
+        type: string
+        # default: '2023-08-08/yourdbfile.sql'
+
+jobs:
+  import-db:
+    runs-on: ubuntu-latest
+    if: ${{github.event.inputs.check}} == 'yes'
+    steps:
+      - name: Migrate Database
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          script: |
+            mkdir -p imports
+            export AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY}}
+            export AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET}}
+            aws s3 cp s3://faithworksbackups/database/${{vars.DOMAIN}}/${{github.event.inputs.file}} imports/import.sql --region us-east-2
+            mysql -u${{secrets.DATABASE_USER}} -p${{secrets.DATABASE_PASSWORD}} ${{secrets.DATABASE_NAME}} < imports/import.sql
+            rm imports/import.sql
+      - name: Import complete
+        run: echo "Import completed successfully"

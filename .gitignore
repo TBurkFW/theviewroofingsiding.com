@@ -1,0 +1,7 @@
+
+.DS_Store
+/vendor/
+/public/wp/
+/public/app/plugins/
+/public/app/themes/
+composer.lock

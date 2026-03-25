@@ -1,0 +1,86 @@
+name: Deploy To Lightsail
+
+env:
+  DEPLOY_PACKAGE_NAME_FILE: "${{ github.sha }}.zip"
+  DEPLOY_PACKAGE_NAME: "${{ github.sha }}"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout The Repo
+        uses: actions/checkout@v3
+      
+      - name: Secrets Replacement - Database
+        run: sed -i "s~%DATABASE_PASSWORD%~${{secrets.DATABASE_PASSWORD}}~g" config/wp-config.php;
+          
+      - name: Secrets Replacement - AWS
+        run: sed -i "s~%AWS_KEY%~${{secrets.AWS_KEY}}~g" config/wp-config.php;
+          sed -i "s~%AWS_SECRET%~${{secrets.AWS_SECRET}}~g" config/wp-config.php;
+          sed -i "s~%ADMIN_EMAIL%~${{vars.ADMIN_EMAIL}}~g" config/wp-config.php;
+          SES_PASSWORD=$(python3 config/generate-smtp-creds.py ${{secrets.AWS_SECRET}});
+          sed -i "s~%SES_PASSWORD%~$SES_PASSWORD~g" config/wp-config.php;
+          
+      - name: Secrets Replacement - Domain Name
+        run: sed -i "s~%DOMAIN%~${{vars.DOMAIN}}~g" config/wp-config.php;
+          sed -i "s~%DOMAIN%~${{vars.DOMAIN}}~g" config/vhosts/wordpress-vhost.conf;
+          sed -i "s~%DOMAIN%~${{vars.DOMAIN}}~g" config/vhosts/wordpress-https-vhost.conf;
+
+      - name: Secrets Replacement - Crontab
+        run: sed -i "s~%DOMAIN%~${{vars.DOMAIN}}~g" config/crontab;
+          sed -i "s~%ADMIN_EMAIL%~${{vars.ADMIN_EMAIL}}~g" config/crontab;
+
+      - name: Install Dependencies
+        uses: php-actions/composer@v6
+        with:
+          args: --optimize-autoloader --quiet
+
+      - name: Create Deployment Package
+        run: zip -q -r ${{ env.DEPLOY_PACKAGE_NAME_FILE }} . -x *.git*
+
+      - name: Copy Deployment Package To The Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          source: ${{ env.DEPLOY_PACKAGE_NAME_FILE }}
+          target: "/home/${{ secrets.LIGHTSAIL_USER }}/deployment"
+
+      - name: Deploy and Run Cleanup
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          script: test -d /opt/bitnami/site || sudo mkdir /opt/bitnami/site;
+            test -d /home/bitnami/site || ln -s /opt/bitnami/site /home/bitnami/site;
+            sudo unzip -q -o /home/${{ secrets.LIGHTSAIL_USER }}/deployment/${{ env.DEPLOY_PACKAGE_NAME_FILE }} -d /home/${{ secrets.LIGHTSAIL_USER }}/site;
+            cd /home/bitnami/site/premium-plugins/;
+            sudo /bin/bash -c 'for filename in $(find /home/bitnami/site/premium-plugins/. -name "*.zip"); do echo $filename; unzip $filename; rm $filename; done;'
+            rm -rf __MACOSX;
+            sudo /bin/bash -c 'for directory in $(ls -d /home/bitnami/site/premium-plugins/*/); do rm -rf /home/bitnami/site/public/app/plugins/$(basename -- $directory); mv $directory /home/bitnami/site/public/app/plugins/.; done;'
+            test -d /opt/bitnami/site/public/app/uploads && sudo chown daemon:daemon /opt/bitnami/site/public/app/uploads; sudo chown -R daemon:daemon /opt/bitnami/site/public/app/uploads/.;
+            sudo chown daemon:daemon /home/bitnami/site/public/app/wp-cache-config.php;
+            test -d /home/bitnami/site/public/app/cache || sudo mkdir /home/bitnami/site/public/app/cache;
+            sudo chown -R daemon:daemon /home/bitnami/site/public/app/cache;
+            test -d /home/bitnami/site/public/app/wflogs || sudo mkdir /home/bitnami/site/public/app/wflogs;
+            sudo chown -R daemon:daemon /home/bitnami/site/public/app/wflogs;
+            test -d /home/bitnami/site/public/app/uploads/uael_uploads || sudo mkdir /home/bitnami/site/public/app/uploads/uael_uploads;
+            sudo chown -R daemon:daemon /home/bitnami/site/public/app/uploads/uael_uploads;
+            sudo cp -f /home/bitnami/site/config/vhosts/* /opt/bitnami/apache/conf/vhosts/.;
+            sudo cp -f /home/bitnami/site/config/wp-cli/wp-cli.yml /opt/bitnami/wp-cli/conf/wp-cli.yml;
+            rm /home/${{ secrets.LIGHTSAIL_USER }}/deployment/${{ env.DEPLOY_PACKAGE_NAME_FILE }};
+            (2>/dev/null cat /home/bitnami/site/config/crontab) | crontab -;
+            sudo /opt/bitnami/ctlscript.sh restart apache;
+      - name: Deployment completed Successfully
+        run: echo "Deployment completed successfully"
