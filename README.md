@@ -1,4 +1,4 @@
-# FaithWorks Boilerplate
+# theviewroofingsiding.com
 
 The first step it to create a new repo from the boilerplate template. This allows us to check in code and create configuration for the new site.
 
