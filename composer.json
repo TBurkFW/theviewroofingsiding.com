@@ -2,19 +2,19 @@
     "name": "faithworks/template",
     "type": "project",
     "require": {
-        "composer/installers": "^2.2",
-        "johnpbloch/wordpress": "^6.3.0",
-        "humanmade/s3-uploads": "^3.0.7",
-        "wpackagist-plugin/wp-super-cache":"^2.0.0",
-        "wpackagist-plugin/elementor": "^3.35.8",
-        "wpackagist-plugin/google-site-kit": "^1.175.0",
-        "wpackagist-plugin/jetpack": "^15.7-a.5",
-        "wpackagist-plugin/wordpress-seo":"^24.3",
-        "wpackagist-plugin/better-search-replace":"^1.4.2",
-        "wpackagist-theme/hello-elementor": "^3.4.7",
-        "wpackagist-plugin/redirection":"^5.5.1",
-        "wpackagist-plugin/duplicate-page":"^4.5.6",
-        "wpackagist-plugin/safe-svg":"^2.3.1"
+        "composer/installers": "2.2",
+        "johnpbloch/wordpress": "6.3.0",
+        "humanmade/s3-uploads": "3.0.7",
+        "wpackagist-plugin/wp-super-cache":"2.0.0",
+        "wpackagist-plugin/elementor": "3.35.8",
+        "wpackagist-plugin/google-site-kit": "1.175.0",
+        "wpackagist-plugin/jetpack": "15.7-a.5",
+        "wpackagist-plugin/wordpress-seo":"24.3",
+        "wpackagist-plugin/better-search-replace":"1.4.2",
+        "wpackagist-theme/hello-elementor": "3.4.7",
+        "wpackagist-plugin/redirection":"5.5.1",
+        "wpackagist-plugin/duplicate-page":"4.5.6",
+        "wpackagist-plugin/safe-svg":"2.3.1"
     },
     "autoload": {
         "psr-4": {
