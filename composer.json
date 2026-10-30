@@ -26,6 +26,10 @@
             "composer/installers": true,
             "johnpbloch/wordpress-core-installer": true
         }
+               },
+         "platform": {
+            "php": "8.3.99"
+        }
     },
     "extra": {
         "installer-paths": {
